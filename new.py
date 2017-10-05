@@ -3,7 +3,7 @@ from twisted.internet import reactor
 from twisted.protocols.basic import LineReceiver
 from pprint import pprint
 from dumper import dump
-import random
+import json
 
 class Player:
 	'Player information'
@@ -62,9 +62,10 @@ class MudParse(LineReceiver):
 	def handle_PASS(self, message):
 		message = message.rstrip()
 		if users[self.name] == message:
-			self.transport.write("Welcome, %s\n" % self.name)
 			self.state = "BASIC"
+			self.id = self.name
 			onlinePlayers[self.name] = self
+			sM(self.id,"Welcome, %s" % self.name)
 		else:
 			self.transport.write("Incorrect password. Please try again.\nEnter password:\n")
 			return
@@ -73,10 +74,10 @@ class MudParse(LineReceiver):
 		message = message.rstrip()
 		if message == "showme":
 			msg = "Clients: %s\n" % onlinePlayers.keys()
-			self.transport.write(msg)
+			sM(self.id,msg)
 		elif message == "sendtoall":
-			for name, protocol in onlinePlayers.iteritems():
-				protocol.transport.write("This is going to everyone\n")
+			for id in onlinePlayers: #.iteritems():
+				sM(id,"This is going to everyone")
 		elif message == "info":
 			dump(onlinePlayers)
 		else:
@@ -85,21 +86,14 @@ class MudParse(LineReceiver):
 			if len(parts) > 1:
 				if parts[0] == "to":
 					if parts[1] in onlinePlayers:
-						onlinePlayers[parts[1]].transport.write("The message to you is %s\n" % parts[2])
-						self.transport.write("The message sent was %s\n" % parts[2])
+						sM(parts[1],"The message to you is %s" % parts[2])
+						sM(self.id,"The message sent was %s" % parts[2])
 					else:
-						self.transport.write("That player is not online.\n")
+						sM(self.id,"That player is not online.")
 			else:
-				self.transport.write("You typed %s\n" % message)
+				sM(self.id,"You typed %s\n" % message)
 		print ("Sent BASIC message.")
 
-	def sM(id, message) # Sends message with line feed 
-		onlinePlayers[id].transport.write(message + "\n")
-		
-	def sMN(id, message) # Sends message without line feed
-		onlinePlayers[id].transport.write(message)
-	
-	
 class MudFactory(Factory):
 	def __init__(self):
 		self.clients = {}
@@ -107,9 +101,22 @@ class MudFactory(Factory):
 	def buildProtocol(self, addr):
 		return MudParse()
 
+	# Sends message with line feed 
+def sM(id, message): 
+	onlinePlayers[id].transport.write(message + "\n")
+	# Sends message without line feed	
+def sMN(id, message):
+	onlinePlayers[id].transport.write(message)
+
+USER_FILE = "data/users.json"
+ROOM_FILE = "data/rooms.json"
+
 if __name__ == '__main__':
 	# Set up global variables
-	users = {'tarrenn' : 'tarrenn', 'tellian':'tellian'}
+	with open(USER_FILE) as user_file:
+		users = json.load(user_file)
+	with open(ROOM_FILE) as room_file:
+		rooms = json.load(room_file)
 	onlinePlayers = {}
 	reactor.listenTCP(4000, MudFactory())
 	reactor.run()
