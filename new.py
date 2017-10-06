@@ -4,6 +4,7 @@ from twisted.protocols.basic import LineReceiver
 from pprint import pprint
 from dumper import dump
 import json
+import yaml
 
 class Player:
 	'Player information'
@@ -18,9 +19,21 @@ class Stats:
 		self.character = 12
 
 class CharData:
-	def __init__(self):
-			self.stats = Stats()
-			self.other = "Misc"
+	def __init__(self, charId, sId):
+		self.name = characters[charId]["name"]
+		self.desc = characters[charId]["desc"]
+#		self.stats = Stats()
+		self.other = "Misc"
+		self.sessionId = sId
+		self.loc = characters[charId]["loc"]
+	def parse(self, cmdStr):
+		# This will actually parse out commands.
+		sM(self.sessionId,cmdStr + " - is what was given")
+		if cmdStr=="l" or cmdStr=="look":
+			roomDesc = rooms[self.loc]["desc"]
+			roomName = rooms[self.loc]["name"]
+			mainDesc = roomName + "\n" + roomDesc
+			sM(self.sessionId,mainDesc)
 
 class MudParse(LineReceiver):
 	def __init__(self):
@@ -34,6 +47,7 @@ class MudParse(LineReceiver):
 	def connectionLost(self, reason):
 		if self.name:
 			del onlinePlayers[self.name]
+			del onlineCharacters[self.charId]
 			print ("Lost a user")
 		else:
 			return
@@ -61,10 +75,12 @@ class MudParse(LineReceiver):
 
 	def handle_PASS(self, message):
 		message = message.rstrip()
-		if users[self.name] == message:
+		if users[self.name]["pw"] == message:
 			self.state = "BASIC"
 			self.id = self.name
+			self.charId = users[self.name]["charId"]
 			onlinePlayers[self.name] = self
+			onlineCharacters[self.charId] = CharData(self.charId,self.name)
 			sM(self.id,"Welcome, %s" % self.name)
 		else:
 			self.transport.write("Incorrect password. Please try again.\nEnter password:\n")
@@ -80,7 +96,9 @@ class MudParse(LineReceiver):
 				sM(id,"This is going to everyone")
 		elif message == "info":
 			dump(onlinePlayers)
+			dump(onlineCharacters)
 		else:
+			onlineCharacters[self.charId].parse(message)
 			# Simple parser time, adding "to" functionality
 			parts = message.split(" ")
 			if len(parts) > 1:
@@ -110,14 +128,18 @@ def sMN(id, message):
 
 USER_FILE = "data/users.json"
 ROOM_FILE = "data/rooms.json"
+CHAR_FILE = "data/characters.json"
 
 if __name__ == '__main__':
 	# Set up global variables
 	with open(USER_FILE) as user_file:
-		users = json.load(user_file)
+		users = yaml.safe_load(user_file)
 	with open(ROOM_FILE) as room_file:
-		rooms = json.load(room_file)
+		rooms = yaml.safe_load(room_file)
+	with open(CHAR_FILE) as char_file:
+		characters = yaml.safe_load(char_file)
 	onlinePlayers = {}
+	onlineCharacters = {}
 	reactor.listenTCP(4000, MudFactory())
 	reactor.run()
 

@@ -1,5 +1,5 @@
 {
-	"tellian":"tellian",
-	"tarrenn":"tarrenn"
+"tellian":{ "pw":"tellian","charId":"1" },
+"tarrenn":{ "pw":"tarrenn","charId":"2" }
 }
 
