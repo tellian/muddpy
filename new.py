@@ -5,6 +5,7 @@ from pprint import pprint
 from dumper import dump
 import json
 import yaml
+import commands
 
 class Player:
 	'Player information'
@@ -24,16 +25,17 @@ class CharData:
 		self.desc = characters[charId]["desc"]
 #		self.stats = Stats()
 		self.other = "Misc"
-		self.sessionId = sId
+		self.sId = sId
 		self.loc = characters[charId]["loc"]
-	def parse(self, cmdStr):
+#	def parse(self, cmdStr):
 		# This will actually parse out commands.
-		sM(self.sessionId,cmdStr + " - is what was given")
-		if cmdStr=="l" or cmdStr=="look":
-			roomDesc = rooms[self.loc]["desc"]
-			roomName = rooms[self.loc]["name"]
-			mainDesc = roomName + "\n" + roomDesc
-			sM(self.sessionId,mainDesc)
+		#sM(self.sessionId,cmdStr + " - is what was given")
+		#if cmdStr=="l" or cmdStr=="look":
+		#	roomDesc = rooms[self.loc]["desc"]
+		#	roomName = rooms[self.loc]["name"]
+		#	mainDesc = roomName + "\n" + roomDesc
+		#	sM(self.sessionId,mainDesc)
+
 
 class MudParse(LineReceiver):
 	def __init__(self):
@@ -81,7 +83,7 @@ class MudParse(LineReceiver):
 			self.charId = users[self.name]["charId"]
 			onlinePlayers[self.name] = self
 			onlineCharacters[self.charId] = CharData(self.charId,self.name)
-			sM(self.id,"Welcome, %s" % self.name)
+			stu(self.id,"Welcome, %s" % self.name)
 		else:
 			self.transport.write("Incorrect password. Please try again.\nEnter password:\n")
 			return
@@ -90,26 +92,28 @@ class MudParse(LineReceiver):
 		message = message.rstrip()
 		if message == "showme":
 			msg = "Clients: %s\n" % onlinePlayers.keys()
-			sM(self.id,msg)
+			stu(self.id,msg)
 		elif message == "sendtoall":
 			for id in onlinePlayers: #.iteritems():
-				sM(id,"This is going to everyone")
+				stu(id,"This is going to everyone")
 		elif message == "info":
 			dump(onlinePlayers)
 			dump(onlineCharacters)
 		else:
-			onlineCharacters[self.charId].parse(message)
+#			onlineCharacters[self.charId].parse(message)
 			# Simple parser time, adding "to" functionality
 			parts = message.split(" ")
+			comm = commands.Command(onlineCharacters[self.charId],message)
+			comm.parse()
 			if len(parts) > 1:
 				if parts[0] == "to":
 					if parts[1] in onlinePlayers:
-						sM(parts[1],"The message to you is %s" % parts[2])
-						sM(self.id,"The message sent was %s" % parts[2])
+						stu(parts[1],"The message to you is %s" % parts[2])
+						stu(self.id,"The message sent was %s" % parts[2])
 					else:
-						sM(self.id,"That player is not online.")
+						stu(self.id,"That player is not online.")
 			else:
-				sM(self.id,"You typed %s\n" % message)
+				stu(self.id,"You typed %s\n" % message)
 		print ("Sent BASIC message.")
 
 class MudFactory(Factory):
@@ -120,10 +124,10 @@ class MudFactory(Factory):
 		return MudParse()
 
 	# Sends message with line feed 
-def sM(id, message): 
+def stu(id, message): 
 	onlinePlayers[id].transport.write(message + "\n")
 	# Sends message without line feed	
-def sMN(id, message):
+def stuL(id, message):
 	onlinePlayers[id].transport.write(message)
 
 USER_FILE = "data/users.json"
