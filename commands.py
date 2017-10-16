@@ -44,6 +44,8 @@ class Command:
 			if len(sizearray) == 2:
 				self.rawArgs = str(sizearray[1]) + " " + str(self.rawArgs)
 				self.command = sizearray[0]
+			else:
+				self.command = alias_list[self.command]
 		if self.command in command_list:
 			self.rawArgs = self.rawArgs.strip()
 			func = self.function_list[self.command]
