@@ -1,11 +1,11 @@
 from twisted.internet.protocol import Protocol, Factory
-from twisted.internet import reactor
+from twisted.internet import reactor, task
 from twisted.protocols.basic import LineReceiver
-from pprint import pprint
 from dumper import dump
 import commands
 import world as w
-from util import sTu, sTuL, sTup, sTr
+import settings as s
+from util import sTu, sTuL, sTup, sTr, doRegen
 
 class MudParse(LineReceiver):
 	def __init__(self):
@@ -14,11 +14,11 @@ class MudParse(LineReceiver):
 				
 	def connectionMade(self):
 		self.transport.write("Please enter your username.\n")
-#		dump(w.onlinePlayers)
+#		dump(w.onlineSessions)
 		
 	def connectionLost(self, reason):
 		if self.name:
-			del w.onlinePlayers[self.name]
+			del w.onlineSessions[self.name]
 			del w.onlineActors[self.charId]
 			print ("Lost a user")
 		else:
@@ -34,7 +34,7 @@ class MudParse(LineReceiver):
 	
 	def handle_LOGIN(self, message):
 		message = message.rstrip()
-		if message in w.onlinePlayers:
+		if message in w.onlineSessions:
 			self.transport.write("Player with that name already online, please try another.\n")
 			return
 		if message in w.users:
@@ -51,7 +51,7 @@ class MudParse(LineReceiver):
 			self.state = "BASIC"
 			self.id = self.name
 			self.charId = w.users[self.name]["charId"]
-			w.onlinePlayers[self.name] = self
+			w.onlineSessions[self.name] = self
 			w.onlineActors[self.charId] = w.PC(self.charId,self.name)
 			sTu(self.id,"Welcome, %s" % self.name)
 			sTr(w.locations[w.onlineActors[self.charId].loc],w.onlineActors[self.charId].name + " has entered the game.",w.onlineActors[self.charId].Id)
@@ -64,13 +64,13 @@ class MudParse(LineReceiver):
 	def handle_BASIC(self, message):
 		message = message.rstrip()
 		if message == "showme":
-			msg = "Clients: %s\n" % w.onlinePlayers.keys()
+			msg = "Clients: %s\n" % w.onlineSessions.keys()
 			sTu(self.id,msg)
 		elif message == "sendtoall":
-			for id in w.onlinePlayers: 
-				sTu(w.onlinePlayers[id].id,"This is going to everyone")
+			for id in w.onlineSessions: 
+				sTu(w.onlineSessions[id].id,"This is going to everyone")
 		elif message == "info":
-			dump(w.onlinePlayers)
+			dump(w.onlineSessions)
 			dump(w.onlineActors)
 		elif message == "loc":
 			dump(w.locations)
@@ -87,7 +87,10 @@ class MudFactory(Factory):
 
 if __name__ == '__main__':
 	# Set up global variables
+	s.init()
 	w.init()
+	regenLoop = task.LoopingCall(doRegen)
+	regenLoop.start(s.settings["regen_timer"])
 	reactor.listenTCP(4000, MudFactory())
 	reactor.run()
 

@@ -1,6 +1,8 @@
 # Parser
-from util import sTu, getSFChar, sTr, sTup
+from util import sTu, getSFChar, sTr, sTup, checkAware
 import world as w
+import settings as s
+
 from dumper import dump
 
 command_list = {
@@ -8,7 +10,9 @@ command_list = {
 	'score':"1",
 	'move':"1",
 	'sit':"1",
-	'stand':"1"
+	'stand':"1",
+	'sleep':"1",
+	'wake':"1",
 	}
 alias_list = {
 	'l':'look',
@@ -17,6 +21,8 @@ alias_list = {
 	's':'move s',
 	'e':'move e',
 	'w':'move w',
+	'sl':'sleep',
+	'wa':'wake',
 	}
 class Command:
 	
@@ -31,12 +37,16 @@ class Command:
 			self.command = command.lower() # First word
 		self.cmdStr = command # Whole thing
 		self.ch = character
-		self.function_list = { 'look': self.c_look, 'score': self.c_score, 'move': self.c_move,
-													'sit': self.c_sit, 'stand': self.c_stand,
-		}
+		self.function_list = { 	'look': self.c_look, 'score': self.c_score, 'move': self.c_move,
+														'sit': self.c_sit, 'stand': self.c_stand, 'sleep': self.c_sleep,
+														'wake': self.c_wake,
+		}	
 		
 	def parse(self):
 		# Look up command in alias list. If exists, rewrite to actual command.
+		if self.cmdStr == "":
+			sTup(self.ch.sId)
+			return
 		self.rawArgs = self.rawArgs.strip()
 		if self.command in alias_list:
 			tmpcmd = alias_list[self.command]
@@ -51,10 +61,12 @@ class Command:
 			func = self.function_list[self.command]
 			func()
 		else:
-			sTu(self.ch.sId,"Command not found")
-			sTup(self.ch.Id)
-
+			sTu(self.ch.sId,"Command not found",1)
+			
 	def c_look(self):
+		if not checkAware(self.ch.Id):
+			sTu(self.ch.sId,"You are not aware enough to do anything.",1)
+			return
 		# Do Look stuff
 		loc = self.ch.loc
 		# Build look string. Start with room name,
@@ -71,8 +83,7 @@ class Command:
 					displayString += w.onlineActors[actors].name + " is standing here.\n"
 				elif w.onlineActors[actors].position == 2:
 					displayString += w.onlineActors[actors].name + " is sitting here.\n"
-		sTu(self.ch.sId,displayString)
-		sTup(self.ch.Id)
+		sTu(self.ch.sId,displayString,1)
 
 	def c_score(self):
 		# Do score stuff
@@ -85,10 +96,17 @@ class Command:
 		displayString += "Wis: {0}\n".format(attribs.get("wis"))
 		displayString += "Int: {0}\n".format(attribs.get("int"))
 		displayString += "Cha: {0}\n".format(attribs.get("cha"))
-		sTu(self.ch.sId,displayString)
-		sTup(self.ch.Id)
+		sTu(self.ch.sId,displayString,1)
 		
 	def c_move(self): # Moving
+		if not checkAware(self.ch.Id):
+			sTu(self.ch.sId,"You are not aware enough to do anything.",1)
+			return
+		here = w.locations[self.ch.loc]
+#		print "here.mv:" + str(here.mv) + " mv:" + str(self.ch.mv.getCur())
+		if here.mv > self.ch.mv.getCur():
+			sTu(self.ch.sId,"You are too tired to move.",1)
+			return
 		# Use only the first argument. As this command is only reached via alias,
 		# don't have to worry about checking for arguments
 		argsSplit = self.rawArgs.split(" ")
@@ -96,11 +114,11 @@ class Command:
 			direction = argsSplit[0]
 		else:
 			direction = self.rawArgs
-		here = w.locations[self.ch.loc]
 		# Check to see if that direction can even be moved in
 		if direction in here.exits:
 			sTr(here,self.ch.name + " has left the room.",self.ch.Id)
 			sTu(self.ch.sId,"You move to the " + direction + ".")
+			self.ch.mv.setCur(self.ch.mv.getCur() - here.mv)
 			here.leaveRoom(self.ch.Id)
 			there = w.locations[here.exits[direction].dest]
 			there.addRoom(self.ch.Id)
@@ -109,25 +127,48 @@ class Command:
 			comm = Command(self.ch,"look")
 			comm.parse()
 		else:
-			sTu(self.ch.sId,"You cannot go that way.")
-			sTup(self.ch.Id)
+			sTu(self.ch.sId,"You cannot go that way.",1)
 
 	def c_sit(self): # Sitting
+		if not checkAware(self.ch.Id):
+			sTu(self.ch.sId,"You are not aware enough to do anything.",1)
+			return
 		if self.ch.position == 2:
-			sTu(self.ch.sId,"You are already sitting!")
-			sTup(self.ch)
+			sTu(self.ch.sId,"You are already sitting!",1)
 		elif self.ch.position == 1:
 			self.ch.position = 2
-			sTu(self.ch.sId,"You sit down.")
+			sTu(self.ch.sId,"You sit down.",1)
 			sTr(w.locations[self.ch.loc],self.ch.name + " sits down.",self.ch.Id)
-			sTup(self.ch.Id)
-	
+		
 	def c_stand(self): # Standing
+		if not checkAware(self.ch.Id):
+			sTu(self.ch.sId,"You are not aware enough to do anything.",1)
+			return
 		if self.ch.position == 1:
-			sTu(self.ch.sId,"You are already standing!")
-			sTup(self.ch)
+			sTu(self.ch.sId,"You are already standing!",1)
 		elif self.ch.position == 2:
 			self.ch.position = 1
-			sTu(self.ch.sId,"You stand up.")
+			sTu(self.ch.sId,"You stand up.",1)
 			sTr(w.locations[self.ch.loc],self.ch.name + " stands up.",self.ch.Id)
-			sTup(self.ch.Id)
+		
+	def c_sleep(self): # Going to sleep
+		if self.ch.position == 3:
+			sTu(self.ch.sId,"You are already asleep.",1)
+		elif self.ch.position == 4:
+			sTu(self.ch.sId,"You are unconscious already and can't sleep.",1)
+		elif (self.ch.position == 1 or self.ch.position == 2):
+			sTu(self.ch.sId,"You lie down and go to sleep.",1)
+			self.ch.position = 3
+			sTr(w.locations[self.ch.loc],self.ch.name + " lies down and goes to sleep.",self.ch.Id)
+
+	def c_wake(self): # Waking up
+		if (self.ch.position == 1 or self.ch.position == 2):
+			sTu(self.ch.sId,"You are already awake.",1)
+		elif (self.ch.position == 3):
+			sTu(self.ch.sId,"You wake and sit up.",1)
+			self.ch.position = 2
+			sTr(w.locations[self.ch.loc],self.ch.name + " wakes and sits up.",self.ch.Id)
+		elif (self.ch.position == 4):
+			sTu(self.ch.sId,"You can't wake up.",1)
+			
+	
