@@ -1,0 +1,6 @@
+{
+"1":
+{"name":"Lobby","desc":"This is a long description.","exits":{"s":"2"},"mv":"2"},
+"2":
+{"name":"Bedroom","desc":"This is the bedroom.","exits":{"n":"1"},"mv":"2"}
+}
