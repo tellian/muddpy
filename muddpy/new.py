@@ -2,7 +2,8 @@ from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor, task
 from twisted.protocols.basic import LineReceiver
 from dumper import dump
-from commands.comUtil import cparse
+#from commands.comUtil import cparse
+from Commands import cparse
 import world as w
 import settings as s
 from util import sTu, sTuL, sTup, sTr, doRegen
@@ -19,6 +20,7 @@ class MudParse(LineReceiver):
 	def connectionLost(self, reason):
 		if self.name:
 			del w.onlineSessions[self.name]
+			w.locations[w.onlineActors[self.charId].loc].leaveRoom(self.charId)
 			del w.onlineActors[self.charId]
 			print ("Lost a user")
 		else:

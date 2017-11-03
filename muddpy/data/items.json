@@ -1,0 +1,6 @@
+{
+"1":
+{"rdesc":"Light glances off of a shiny bauble on the ground here.","sdesc":"shiny bauble","ldesc":"This is a shiny test bauble.","type":"misc","weight":"5","keys":["bauble","shiny"]},
+"2":
+{"rdesc":"","sdesc":"elven hat","ldesc":"A rumpled up hat.","type":"armor","weight":"2","keys":["elven","hat","rumpled"]}
+}

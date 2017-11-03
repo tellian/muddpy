@@ -70,3 +70,23 @@ def doRegen():
 				if diff > 5:
 					diff = 5
 				pc.mv.setCur(pc.mv.getCur() + diff)
+
+def load_new_item(itemNum,ch):
+	itemKey = w.misc.highobj + 1
+	w.misc.highobj = itemKey + 1
+	w.onlineObjects[itemKey] = w.Item(itemNum)
+	here = w.locations[ch.loc]
+	here.addObject(itemKey)
+
+def isVowel(checkString):
+	vowels = ["a","e","i","o","u"]
+	if checkString.lower() in vowels:
+		return 1
+	else:
+		return 0
+
+def returnArgInfo(text):
+	info = {}
+	info["args"] = text.split()
+	info["num"] = len(info["args"])
+	return info

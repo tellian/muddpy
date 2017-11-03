@@ -1,12 +1,12 @@
 # informational
 
-from util import sTu, getSFChar, sTr, sTup, checkAware
+from util import sTu, getSFChar, sTr, sTup, checkAware, isVowel, returnArgInfo
 import world as w
 import settings as s
 
 def c_look(ch,rawArgs):
 	if not checkAware(ch.Id):
-		sTu(ch.sId,"You are not aware enough to do anything.",1)
+		ch.stu("You are not aware enough to do anything.")
 		return
 	# Do Look stuff
 	loc = ch.loc
@@ -17,6 +17,16 @@ def c_look(ch,rawArgs):
 		displayString += exits
 	# Add description
 	displayString += "]\n" + w.locations[loc].desc + "\n"
+	# Add items in room
+	for items in w.locations[loc].objects:
+		if not w.onlineObjects[items].rdesc:
+			if isVowel(w.onlineObjects[items].sdesc[:1]):
+				displayString += "An "
+			else:
+				displayString += "A "
+			displayString += w.onlineObjects[items].sdesc + " is sitting on the ground here.\n"
+		else:
+			displayString += w.onlineObjects[items].rdesc + "\n"
 	# Add other Actors
 	for actors in w.locations[loc].actors:
 		if actors <> ch.Id:
@@ -24,7 +34,7 @@ def c_look(ch,rawArgs):
 				displayString += w.onlineActors[actors].name + " is standing here.\n"
 			elif w.onlineActors[actors].position == 2:
 				displayString += w.onlineActors[actors].name + " is sitting here.\n"
-	sTu(ch.sId,displayString,1)
+	ch.stu(displayString)
 
 def c_score(ch,rawArgs):
 	# Do score stuff
@@ -37,4 +47,19 @@ def c_score(ch,rawArgs):
 	displayString += "Wis: {0}\n".format(attribs.wisd.getCur())
 	displayString += "Int: {0}\n".format(attribs.inte.getCur())
 	displayString += "Cha: {0}\n".format(attribs.char.getCur())
-	sTu(ch.sId,displayString,1)
+	ch.stu(displayString)
+
+def c_keys(ch,rawArgs):
+	args = returnArgInfo(rawArgs)
+	if args["num"] == 0:
+		ch.stu("This would be a key command.",0)
+		# First check for keys in actors in the room
+		here = w.locations[ch.loc]
+		for charId in here.actors:
+			ch.stu(w.onlineActors[charId].getFirstKey() + " - " + w.onlineActors[charId].sdesc,0)
+		# Then check for keys in objects in the room
+		# Then check for keys on objects in the character's inventory
+		ch.stu("")
+	else:
+		ch.stu("Don't need any extra args.")
+	

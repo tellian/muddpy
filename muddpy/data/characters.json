@@ -1,6 +1,6 @@
 {
 "1":
-{"name":"TellianChar","desc":"I am a Tellian description.","loc":"1"},
+{"name":"TellianChar","desc":"I am a Tellian description.","loc":"1","keys":["tall","thin","half-elf","half"],"sdesc":"A tall, thin half-elf"},
 "2":
-{"name":"TarrennChar","desc":"I am a Tarrenn description.","loc":"1"}
+{"name":"TarrennChar","desc":"I am a Tarrenn description.","loc":"1","keys":["tall","sarnak","lizard"],"sdesc":"A tall sarnak"}
 }

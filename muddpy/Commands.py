@@ -4,6 +4,8 @@ import world as w
 import settings as s
 from commands import movement
 from commands import inform
+from commands import admin
+from commands import objects
 
 command_list = {
 	'look':"1",
@@ -13,6 +15,11 @@ command_list = {
 	'stand':"1",
 	'sleep':"1",
 	'wake':"1",
+	'loadobj':"1",
+	'get':"1",
+	'drop':"1",
+	'inventory':"1",
+	'keys':"1",
 	}
 alias_list = {
 	'l':'look',
@@ -23,11 +30,16 @@ alias_list = {
 	'w':'move w',
 	'sl':'sleep',
 	'wa':'wake',
+	'lo':'loadobj',
+	'i':'inventory',
+	'inv':'inventory',
+	'key':'keys',
 	}
 
 function_list = {	'look': inform.c_look, 'score': inform.c_score, 'move': movement.c_move,
 									'sit': movement.c_sit, 'stand': movement.c_stand, 'sleep': movement.c_sleep,
-									'wake': movement.c_wake,
+									'wake': movement.c_wake, 'loadobj': admin.c_loadObj, 'get': objects.c_get,
+									'drop': objects.c_drop, 'inventory': objects.c_inventory, 'keys': inform.c_keys
 }
 
 def cparse(ch, cmdStr): # Full Command String, character object
